@@ -1,0 +1,234 @@
+# PIPELINE DEFINITION
+# Name: sentiment-analysis-pipeline
+# Description: A simple pipeline for sentiment analysis.
+# Inputs:
+#    data_path: str [Default: 'C:/Users/hend8/Downloads/IMDB-Dataset.csv']
+#    epochs: int [Default: 10.0]
+#    learning_rate: float [Default: 0.001]
+#    model_path: str [Default: 'C:/Users/hend8/Desktop/sentiment_model/trained_model.pth']
+#    output_path: str [Default: '/tmp/processed_data.csv']
+#    test_data_path: str [Default: 'C:/Users/hend8/Desktop/Analyse des sentiments avec Kubeflow et Hugging Face/test_data.csv']
+components:
+  comp-evaluate-op:
+    executorLabel: exec-evaluate-op
+    inputDefinitions:
+      parameters:
+        model_path:
+          parameterType: STRING
+        test_data_path:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-preprocess-op:
+    executorLabel: exec-preprocess-op
+    inputDefinitions:
+      parameters:
+        data_path:
+          parameterType: STRING
+        output_path:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-train-op:
+    executorLabel: exec-train-op
+    inputDefinitions:
+      parameters:
+        epochs:
+          parameterType: NUMBER_INTEGER
+        learning_rate:
+          parameterType: NUMBER_DOUBLE
+        processed_data_path:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-evaluate-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - evaluate_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef evaluate_op(model_path: str, test_data_path: str) -> str:\n \
+          \   # Simulating model evaluation\n    print(f\"Evaluating model: {model_path}\
+          \ on test data: {test_data_path}\")\n    evaluation_metrics = \"Accuracy:\
+          \ 95%\"  # Example metric\n    print(f\"Evaluation result: {evaluation_metrics}\"\
+          )\n    return evaluation_metrics\n\n"
+        image: python:3.9
+    exec-preprocess-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - preprocess_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef preprocess_op(data_path: str, output_path: str) -> str:\n   \
+          \ # Simulating preprocessing (e.g., tokenization, vectorization)\n    print(f\"\
+          Preprocessing data from: {data_path}\")\n    # Here you would have the actual\
+          \ preprocessing code, e.g., CSV to TFRecord or tokenization\n    processed_path\
+          \ = output_path  # Example processed data path\n    print(f\"Preprocessed\
+          \ data saved to: {processed_path}\")\n    return processed_path\n\n"
+        image: python:3.9
+    exec-train-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train_op(processed_data_path: str, epochs: int, learning_rate:\
+          \ float) -> str:\n    # Simulating training\n    print(f\"Training model\
+          \ with data from: {processed_data_path} using {epochs} epochs and learning\
+          \ rate {learning_rate}\")\n    model_path = \"C:/Users/hend8/Desktop/sentiment_model/trained_model.pth\"\
+          \  # Updated model path\n    # Implement model training logic here\n   \
+          \ print(f\"Model trained and saved to: {model_path}\")\n    return model_path\n\
+          \n"
+        image: python:3.9
+pipelineInfo:
+  description: A simple pipeline for sentiment analysis.
+  name: sentiment-analysis-pipeline
+root:
+  dag:
+    tasks:
+      evaluate-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-evaluate-op
+        dependentTasks:
+        - train-op
+        inputs:
+          parameters:
+            model_path:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: train-op
+            test_data_path:
+              componentInputParameter: test_data_path
+        taskInfo:
+          name: evaluate-op
+      preprocess-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-preprocess-op
+        inputs:
+          parameters:
+            data_path:
+              componentInputParameter: data_path
+            output_path:
+              componentInputParameter: output_path
+        taskInfo:
+          name: preprocess-op
+      train-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train-op
+        dependentTasks:
+        - preprocess-op
+        inputs:
+          parameters:
+            epochs:
+              componentInputParameter: epochs
+            learning_rate:
+              componentInputParameter: learning_rate
+            processed_data_path:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: preprocess-op
+        taskInfo:
+          name: train-op
+  inputDefinitions:
+    parameters:
+      data_path:
+        defaultValue: C:/Users/hend8/Downloads/IMDB-Dataset.csv
+        isOptional: true
+        parameterType: STRING
+      epochs:
+        defaultValue: 10.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      learning_rate:
+        defaultValue: 0.001
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      model_path:
+        defaultValue: C:/Users/hend8/Desktop/sentiment_model/trained_model.pth
+        isOptional: true
+        parameterType: STRING
+      output_path:
+        defaultValue: /tmp/processed_data.csv
+        isOptional: true
+        parameterType: STRING
+      test_data_path:
+        defaultValue: C:/Users/hend8/Desktop/Analyse des sentiments avec Kubeflow
+          et Hugging Face/test_data.csv
+        isOptional: true
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.11.0
